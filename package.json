@@ -1,0 +1,14 @@
+{
+	"author": "Voltaism",
+	"version": "1.0",
+        "onset_build": "1.0.3",
+        "server_scripts": [
+                "server/autoupdater.lua",
+                "server/json.lua"
+        ],
+        "auto_updater": {
+           "package.json": "https://raw.githubusercontent.com/vugi99/onset-auto-updater/master/package.json",
+           "server/autoupdater.lua": "https://raw.githubusercontent.com/vugi99/onset-auto-updater/master/server/autoupdater.lua",
+           "server/json.lua": "https://raw.githubusercontent.com/vugi99/onset-auto-updater/master/server/json.lua"
+        }
+}
