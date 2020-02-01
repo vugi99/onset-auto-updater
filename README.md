@@ -8,7 +8,7 @@
 
 #### Bug
 * If you are the developer don't bump the version on your server if you are developping a package that supports onset-auto-updater or until the raw.githubusercontent.com is updated ~ 10 mins after git push
-* If you are a user that installed an update less than 10 mins the auto-updater will revert changes because raw.githubusercontent.com take ~ 10 mins to update and will re-update it if you re-launch your server when raw.githubusercontent.com is updated
+* If you are a user that installed an update less than 10 mins from the git push the auto-updater will revert changes because raw.githubusercontent.com take ~ 10 mins to update and will re-update it if you re-launch your server when raw.githubusercontent.com is updated
 
 #### How to support onset-auto-updater for developers
 * How to get raw links : you need to go on the script on github and click on raw then copy the link
