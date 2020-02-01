@@ -10,7 +10,10 @@
 * If you are the developer don't bump the version on your server if you are developping a package that supports onset-auto-updater or until the raw.githubusercontent.com is updated ~ 10 mins after git push
 * If you are a user that installed an update less than 10 mins from the git push the auto-updater will revert changes because raw.githubusercontent.com take ~ 10 mins to update and will re-update it if you re-launch your server when raw.githubusercontent.com is updated
 
-#### How to support onset-auto-updater for developers
+#### How to support onset-auto-updater AUTOMATICALLY for developers
+* do /searchraws (package_name) (github repo link) - the github repo link is something like https://github.com/name/repo_name , it will add and save required links (only master branch) to the package.json and print in the chat saved paths and links , please check them before releasing the support , you need to restart the server to check updates
+
+#### How to support onset-auto-updater MANUALLY for developers
 * To support onset-auto-updater you need to add things in the package.json
 * How to get raw links : you need to go on the script on github and click on raw then copy the link
 * You need to add a "auto_updater" table like (example)
