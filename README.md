@@ -12,6 +12,7 @@
 
 #### How to support onset-auto-updater AUTOMATICALLY for developers
 * do /searchraws (package_name) (github repo link) - the github repo link is something like https://github.com/name/repo_name , it will add and save required links (only master branch) to the package.json and print in the chat saved paths and links , please check them before releasing the support , you need to restart the server to check updates
+* Don't forget to bump the version in the package.json at each release or the update won't be downloaded
 
 #### How to support onset-auto-updater MANUALLY for developers
 * To support onset-auto-updater you need to add things in the package.json
