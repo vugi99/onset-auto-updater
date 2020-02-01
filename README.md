@@ -11,6 +11,7 @@
 * If you are a user that installed an update less than 10 mins from the git push the auto-updater will revert changes because raw.githubusercontent.com take ~ 10 mins to update and will re-update it if you re-launch your server when raw.githubusercontent.com is updated
 
 #### How to support onset-auto-updater for developers
+* To support onset-auto-updater you need to add things in the package.json
 * How to get raw links : you need to go on the script on github and click on raw then copy the link
 * You need to add a "auto_updater" table like (example)
 ```lua
