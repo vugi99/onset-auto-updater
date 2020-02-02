@@ -185,7 +185,7 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
          for i,v in pairs(httppackage.server_scripts) do
             if httppackage.auto_updater[v] then
                files_updates=files_updates+1
-                auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
+                auto_updater_http(httppackage.auto_updater[v],false,packagename,v,false,true,false)
             end
          end
       end
@@ -193,7 +193,7 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
          for i,v in pairs(httppackage.client_scripts) do
             if httppackage.auto_updater[v] then
                files_updates=files_updates+1
-               auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
+               auto_updater_http(httppackage.auto_updater[v],false,packagename,v,false,true,false)
             end
          end
       end
@@ -201,7 +201,7 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
          for i,v in pairs(httppackage.files) do
             if httppackage.auto_updater[v] then
                files_updates=files_updates+1
-               auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
+               auto_updater_http(httppackage.auto_updater[v],false,packagename,v,false,true,false)
             end
          end
       end
