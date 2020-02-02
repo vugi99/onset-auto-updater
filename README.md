@@ -4,7 +4,7 @@
 * All my packages are now compatible with onset-auto-updater , you need to download the autoupdater support manually to activate the auto updates for all my packages
 * onset-auto-updater will search for updates when the server starts for each packages loaded (if they supports onset-auto-updater)
 * if nothing is printed by the script , nothing was updated (on server start)
-* You need to restart the server to apply changes WARNING : if a new file in a package is created you need to restart the server 2 times
+* You need to restart the server to apply changes WARNING : if a new file in a package is created in a new directory (it will print INVALID PATH) and you need to make the path and download the files in this path manually or modifying the version in the package.json to re-download the update 
 
 #### Bug
 * If you are the developer don't bump the version on your server if you are developping a package that supports onset-auto-updater or until the raw.githubusercontent.com is updated ~ 10 mins after git push

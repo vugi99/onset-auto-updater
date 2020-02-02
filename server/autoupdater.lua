@@ -54,31 +54,31 @@ function OnGetCompletejson(a, b, c,http,packagename)
                local pack_tbl = json_decode(contents);
                io.close(package)
                if pack_tbl.version ~= httppackage.version then
-                  print("Updating " .. packagename)
+                  print("Updating " .. packagename .. " " .. pack_tbl.version .. " ---> " .. httppackage.version)
                   local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
                   if writejson then
                      writejson:write(body)
                      print("file package.json updated")
                      io.close(writejson)
                   end
-                  if pack_tbl.server_scripts then
-                     for i,v in pairs(pack_tbl.server_scripts) do
-                        if pack_tbl.auto_updater[v] then
-                            auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v)
+                  if httppackage.server_scripts then
+                     for i,v in pairs(httppackage.server_scripts) do
+                        if httppackage.auto_updater[v] then
+                            auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
                         end
                      end
                   end
-                  if pack_tbl.client_scripts then
-                     for i,v in pairs(pack_tbl.client_scripts) do
-                        if pack_tbl.auto_updater[v] then
-                           auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v)
+                  if httppackage.client_scripts then
+                     for i,v in pairs(httppackage.client_scripts) do
+                        if httppackage.auto_updater[v] then
+                           auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
                         end
                      end
                   end
-                  if pack_tbl.files then
-                     for i,v in pairs(pack_tbl.files) do
-                        if pack_tbl.auto_updater[v] then
-                           auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v)
+                  if httppackage.files then
+                     for i,v in pairs(httppackage.files) do
+                        if httppackage.auto_updater[v] then
+                           auto_updater_http(httppackage.auto_updater[v],false,packagename,v)
                         end
                      end
                   end
@@ -98,6 +98,8 @@ function OnGetCompletefile(a, b, c,http,packagename,path)
       file:write(body)
       print("file " .. path .. " updated")
       io.close(file)
+   else
+      print("packages/"..packagename.."/" .. path .. " INVALID PATH, Please create it manually")
    end
 end
    http_destroy(http)
