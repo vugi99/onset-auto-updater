@@ -1,5 +1,7 @@
 local files_updates = 0
 
+local restart_packages = {}
+
 function string:split(sep) -- http://lua-users.org/wiki/SplitJoin
    local sep, fields = sep or ":", {}
    local pattern = string.format("([^%s]+)", sep)
@@ -9,7 +11,56 @@ end
 
 function check_if_restart()
    if files_updates==0 then
-      ServerExit("Applying updates")
+      if restart_packages[1] == nil then
+         ServerExit("Applying update for autoupdater")
+      else
+      print("Applying updates")
+      for i,v in ipairs(restart_packages) do
+         StopPackage(v)
+
+	      Delay(500, function()
+		      StartPackage(v)
+	      end)
+      end
+
+   end
+   end
+end
+
+function get_latest_commit(link,packagename)
+   local linksplit = link:split("://")
+   local protocol = linksplit[1]
+   local linksplit2 = link:split("/")
+   local gitname = ""
+   local reponame = ""
+   for i,v in ipairs(linksplit2) do
+      if (i ~= 1 and i ~= 2)  then 
+         if gitname == "" then
+             gitname=v
+         elseif reponame == "" then
+            reponame=v
+         end
+      end
+   end
+   if (gitname~="" and reponame~="") then
+   local r = http_create()
+   http_set_resolver_protocol(r, "any")
+	http_set_protocol(r, protocol)
+	http_set_host(r, "api.github.com")
+	http_set_port(r, 443)
+	http_set_verifymode(r, "verify_peer")
+	http_set_target(r, "/repos/"..gitname.."/"..reponame.."/commits")
+	http_set_verb(r, "get")
+	http_set_timeout(r, 30000)
+	http_set_version(r, 11)
+	http_set_keepalive(r, false)
+   http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
+   if http_send(r, OnGetCompletecommits, "Str L", 88.88, 1337,r,packagename) == false then
+      print("Url " .. link .. " not found")
+      http_destroy(r)
+   end
+   else
+       print("Can't find the latest commit for " .. link)
    end
 end
 
@@ -37,7 +88,7 @@ function auto_updater_http(link,isjson,packagename,path,isjsonautoupdater,needto
    http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
    if not isjsonautoupdater then
    if isjson then
-      if http_send(r, OnGetCompletejson, "Str L", 88.88, 1337,r,packagename,needtorestart,reinstall) == false then
+      if http_send(r, OnGetCompletejson, "Str L", 88.88, 1337,r,packagename,needtorestart,reinstall,link) == false then
 		   print("Url " .. link .. " not found")
          http_destroy(r)
          if needtorestart then
@@ -63,9 +114,9 @@ else
    end
 end
 
-function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall)
-   if http_is_error(http) then
-      print("Invalid link")
+function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link)
+   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
+      print("Invalid link for " .. packagename)
       files_updates=files_updates-1
   else
    local body = http_result_body(http)
@@ -90,6 +141,7 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall)
                      print("file package.json updated")
                      io.close(writejson)
                   end
+                  table.insert(restart_packages,packagename)
                   if httppackage.server_scripts then
                      for i,v in pairs(httppackage.server_scripts) do
                         if httppackage.auto_updater[v] then
@@ -120,6 +172,9 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall)
                         end
                      end
                   end
+               get_latest_commit(link,packagename) 
+               else
+                  print("No updates for " .. packagename)
                end
            end
          end
@@ -127,8 +182,8 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall)
 end
 
 function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall)
-   if http_is_error(http) then
-      print("Invalid link")
+   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
+      print("Invalid link for " .. packagename)
       if needtorestart then
          files_updates=files_updates-1
          check_if_restart()
@@ -160,9 +215,9 @@ end
 end
 
 function OnGetCompleteautoupdater(a, b, c,http,packagename)
-   if http_is_error(http) then
+   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
       files_updates=files_updates-1
-      print("Invalid link")
+      print("Invalid link for " .. packagename)
       searchupdatesallpackages(true,false)
   else
    local body = http_result_body(http)
@@ -213,6 +268,19 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
       print("INVALID AUTO_UPDATER PATH")
    end
 end
+   http_destroy(http)
+end
+
+function OnGetCompletecommits(a,b,c,http,packagename) 
+   local body = http_result_body(http)
+   local httppackage = json_decode(body)
+   if (http_is_error(http) or httppackage.message == "Not Found") then
+       print("Can't find the latest commit")
+   else
+      if httppackage[1].commit.message then
+         print("Last commit message for " .. packagename .. " is " .. httppackage[1].commit.message)
+      end
+   end
    http_destroy(http)
 end
 
@@ -309,7 +377,7 @@ function makelink(path,gitname,reponame,ply,protocol,packjsonpath)
 end
 
 function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol,packjsonpath)
-   if http_is_error(http) then
+   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
        AddPlayerChat(ply,"Invalid link")
    else
       makelink("package.json",gitname,reponame,ply,protocol,packjsonpath)
@@ -333,7 +401,7 @@ function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol
 end
 
 function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath)
-   if http_is_error(http) then
+   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
       AddPlayerChat(ply,"Error link " .. link)
   else
      local packagefilee = io.open(packjsonpath, 'r') -- reopen it every time to load changes
