@@ -2,10 +2,16 @@
 
 #### Informations
 * All my packages are now compatible with onset-auto-updater , you need to download the autoupdater support manually to activate the auto updates for all my packages
-* onset-auto-updater will search for updates when the server starts for each packages loaded (if they supports onset-auto-updater)
+* onset-auto-updater will search for updates when the server starts for each packages loaded (if they supports onset-auto-updater) and download updates from github (if a new supported file is created it will also works if he is loaded in the package.json)
 * It will print No updates for (package) for each package that supports onset-auto-updater if the version hasn't changed on the github page
 * You need to restart the server to apply changes when you do auto-updater commands (automatically stopped if there is an autoupdater update and updated packages are reloaded) WARNING : if a new file in a package is created in a new directory (it will print INVALID PATH) and you need to make the path and download the files in this path manually or modifying the version in the package.json to re-download the update 
 * onset-auto-updater can now handle raw.githubusercontent errors 400 and 404
+* Supported files : lua, js, css, html, htm
+
+#### Unsupported files informations
+* Don't try to add unsupported files manually , it won't work
+* If you delete a file on your github repo it won't load unsupported files that were deleted because they are no longer loaded in the package.json
+* If a new unsuported file is created on the repo , you must download it manually
 
 #### Bug
 * If you are the developer don't bump the version on your server if you are developping a package that supports onset-auto-updater or until the raw.githubusercontent.com is updated ~ 10 mins after git push

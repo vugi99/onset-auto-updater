@@ -135,44 +135,85 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                   else
                      print("Reinstalling " .. packagename .. " " .. httppackage.version)
                   end
-                  local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
+                  table.insert(restart_packages,packagename)
+                  if httppackage.auto_updater then
+                     local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
                   if writejson then
                      writejson:write(body)
                      print("file package.json updated")
                      io.close(writejson)
                   end
-                  table.insert(restart_packages,packagename)
-                  if httppackage.server_scripts then
-                     for i,v in pairs(httppackage.server_scripts) do
-                        if httppackage.auto_updater[v] then
-                           if needtorestart then
-                           files_updates=files_updates+1
+                        if httppackage.server_scripts then
+                           for i,v in pairs(httppackage.server_scripts) do
+                              if httppackage.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                  auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
                            end
-                            auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                        end
+                        if httppackage.client_scripts then
+                           for i,v in pairs(httppackage.client_scripts) do
+                              if httppackage.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
+                           end
+                        end
+                        if httppackage.files then
+                           for i,v in pairs(httppackage.files) do
+                              if httppackage.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
+                           end
+                        end 
+                     else
+                        print("The auto updater support is not on github , update of " .. packagename .. " update will perform with the local package.json")
+                        local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
+                        if writejson then
+                           pack_tbl.version = httppackage.version
+                            writejson:write(json_encode(pack_tbl))
+                            io.close(writejson)
+                            print("changed version in package.json")
+                        end
+                        if pack_tbl.server_scripts then
+                           for i,v in pairs(pack_tbl.server_scripts) do
+                              if pack_tbl.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                  auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
+                           end
+                        end
+                        if pack_tbl.client_scripts then
+                           for i,v in pairs(pack_tbl.client_scripts) do
+                              if pack_tbl.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
+                           end
+                        end
+                        if pack_tbl.files then
+                           for i,v in pairs(pack_tbl.files) do
+                              if pack_tbl.auto_updater[v] then
+                                 if needtorestart then
+                                 files_updates=files_updates+1
+                                 end
+                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                              end
+                           end
                         end
                      end
-                  end
-                  if httppackage.client_scripts then
-                     for i,v in pairs(httppackage.client_scripts) do
-                        if httppackage.auto_updater[v] then
-                           if needtorestart then
-                           files_updates=files_updates+1
-                           end
-                           auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
-                        end
-                     end
-                  end
-                  if httppackage.files then
-                     for i,v in pairs(httppackage.files) do
-                        if httppackage.auto_updater[v] then
-                           if needtorestart then
-                           files_updates=files_updates+1
-                           end
-                           auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
-                        end
-                     end
-                  end
-               get_latest_commit(link,packagename) 
+                     get_latest_commit(link,packagename)
                else
                   print("No updates for " .. packagename)
                end
@@ -190,6 +231,14 @@ function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall
          end
   else
    local body = http_result_body(http)
+   local pathsplit = path:split(".")
+   local lasti = 0
+   for i,v in ipairs(pathsplit) do
+      lasti=i
+   end
+      if (pathsplit[lasti] == "png" or pathsplit[lasti] == "jpg" or pathsplit[lasti] == "jpeg" or pathsplit[lasti] == "gif" or pathsplit[lasti] == "wav" or pathsplit[lasti] == "mp3" or pathsplit[lasti] == "ogg" or pathsplit[lasti] == "oga" or pathsplit[lasti] == "flac" or pathsplit[lasti] == "ttf" or pathsplit[lasti] == "woff2" or pathsplit[lasti] == "pak") then
+         print("file " .. path .. " : unsupported format")
+      else
    local file = io.open("packages/"..packagename.."/" .. path, 'w') 
    if file then
       file:write(body)
@@ -210,6 +259,7 @@ function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall
          check_if_restart()
          end
    end
+end
 end
    http_destroy(http)
 end
@@ -393,7 +443,14 @@ function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol
       end
       if packagefile.files then
          for i,v in pairs(packagefile.files) do
-            makelink(v,gitname,reponame,ply,protocol,packjsonpath)         
+            local pathsplit = v:split(".")
+            local lasti = 0
+            for i,v in ipairs(pathsplit) do
+               lasti=i
+            end
+          if (pathsplit[lasti] == "html" or pathsplit[lasti] == "htm" or pathsplit[lasti] == "css" or pathsplit[lasti] == "js") then
+            makelink(v,gitname,reponame,ply,protocol,packjsonpath)  
+          end
          end
       end
    end
