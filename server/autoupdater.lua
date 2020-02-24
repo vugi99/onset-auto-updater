@@ -253,11 +253,22 @@ function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall
          check_if_restart()
          end
    else
-      print("packages/"..packagename.."/" .. path .. " INVALID PATH, Please create it manually")
-      if needtorestart then
-         files_updates=files_updates-1
-         check_if_restart()
+      local path_bef = 'packages/'..packagename..'/' .. path
+      local splited_path = path_bef:split("/")
+      local r_path = ""
+      for i,v in ipairs(splited_path) do
+         if i < #splited_path then
+            if i == 1 then
+               r_path = v
+            else
+               r_path = r_path .. "/" .. v
+            end
          end
+      end
+      print(r_path .. " CREATING THE PATH")
+      local path_ = '"' .. r_path .. '"'
+      os.execute("mkdir " .. path_)
+      OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall)
    end
 end
 end
