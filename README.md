@@ -22,7 +22,11 @@
 * /reinstall (package that supports auto-updater optional) - if no args are given it will reinstall all packages that supports auto-updater from github (all changes printed in the console) you need to restart the server to apply changes , if the package arg is given it will reinstall the given package (you need to restart the server to apply changes)
 
 #### How to support onset-auto-updater AUTOMATICALLY for developers
-* do /searchraws (package_name) (github repo link) - the github repo link is something like https://github.com/name/repo_name , it will add and save required links (only master branch) to the package.json and print in the chat saved paths and links , please check them before releasing the support , you need to restart the server to check updates
+* If there is already an auto-updater support , he will be replaced/updated if you do these commands
+* Use /searchraws if the package is already on a public repository (links will be checked)
+* Use /predictraws if the package is local or on a private repository (links won't be checked)
+* do /searchraws (package_name) (github repo link) - the github repo link is something like https://github.com/name/repo_name , it will add and save required links (only master branch) to the package.json and print in the chat saved paths and links , you need to restart the server to check updates
+* or do  /predictraws (package_name) (github repo link) - the github repo link is something like https://github.com/name/repo_name , it will add and save required links (only master branch) to the package.json and print in the chat saved paths and links , please check them before releasing the support / package 
 * Don't forget to bump the version in the package.json at each release or the update won't be downloaded
 
 #### How to support onset-auto-updater MANUALLY for developers

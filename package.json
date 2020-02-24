@@ -1,6 +1,6 @@
 {
 	"author": "Voltaism",
-	"version": "3.4",
+	"version": "3.5",
         "onset_build": "1.0.3",
         "server_scripts": [
                 "server/autoupdater.lua",

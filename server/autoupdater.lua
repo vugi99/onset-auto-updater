@@ -386,7 +386,7 @@ AddEvent("OnPackageStart",function()
            end
 end)
 
-function searchraws_http(link,isfirstcheck,ply,packagefile,host,path,packjsonpath)
+function searchraws_http(link,isfirstcheck,ply,packagefile,host,path,packjsonpath,ispredicted)
    local linksplit = link:split("://")
    local protocol = linksplit[1]
    local linksplit2 = link:split("/")
@@ -417,12 +417,12 @@ function searchraws_http(link,isfirstcheck,ply,packagefile,host,path,packjsonpat
 	http_set_keepalive(r, false)
    http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
    if isfirstcheck then
-      if http_send(r, OnGetCompletecheck, "Str L", 88.88, 1337,r,gitname,reponame,ply,packagefile,protocol,packjsonpath) == false then
+      if http_send(r, OnGetCompletecheck, "Str L", 88.88, 1337,r,gitname,reponame,ply,packagefile,protocol,packjsonpath,ispredicted) == false then
 		   print("Url " .. link .. " not found")
 		   http_destroy(r)
       end
    else
-      if http_send(r, OnGetCompletenewraw, "Str L", 88.88, 1337,r,ply,path,link,packjsonpath) == false then
+      if http_send(r, OnGetCompletenewraw, "Str L", 88.88, 1337,r,ply,path,link,packjsonpath,ispredicted) == false then
 		   print("Url " .. link .. " not found")
 		   http_destroy(r)
       end
@@ -432,24 +432,24 @@ else
 end
 end
 
-function makelink(path,gitname,reponame,ply,protocol,packjsonpath)
+function makelink(path,gitname,reponame,ply,protocol,packjsonpath,ispredicted)
    local link = protocol.."://".."raw.githubusercontent.com".."/"..gitname.."/"..reponame.."/master/"..path
-   searchraws_http(link,false,ply,nil,"raw.githubusercontent.com",path,packjsonpath)
+   searchraws_http(link,false,ply,nil,"raw.githubusercontent.com",path,packjsonpath,ispredicted)
 end
 
-function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol,packjsonpath)
+function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol,packjsonpath,ispredicted)
    if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
        AddPlayerChat(ply,"Invalid link")
    else
-      makelink("package.json",gitname,reponame,ply,protocol,packjsonpath)
+      makelink("package.json",gitname,reponame,ply,protocol,packjsonpath,ispredicted)
       if packagefile.server_scripts then
          for i,v in pairs(packagefile.server_scripts) do
-            makelink(v,gitname,reponame,ply,protocol,packjsonpath) 
+            makelink(v,gitname,reponame,ply,protocol,packjsonpath,ispredicted) 
          end
       end
       if packagefile.client_scripts then
          for i,v in pairs(packagefile.client_scripts) do
-            makelink(v,gitname,reponame,ply,protocol,packjsonpath)        
+            makelink(v,gitname,reponame,ply,protocol,packjsonpath,ispredicted)        
          end
       end
       if packagefile.files then
@@ -460,7 +460,7 @@ function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol
                lasti=i
             end
           if (pathsplit[lasti] == "html" or pathsplit[lasti] == "htm" or pathsplit[lasti] == "css" or pathsplit[lasti] == "js") then
-            makelink(v,gitname,reponame,ply,protocol,packjsonpath)  
+            makelink(v,gitname,reponame,ply,protocol,packjsonpath,ispredicted)  
           end
          end
       end
@@ -468,10 +468,18 @@ function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol
    http_destroy(http)
 end
 
-function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath)
-   if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
-      AddPlayerChat(ply,"Error link " .. link)
-  else
+function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath,ispredicted)
+   local canpass = false
+   if ispredicted then
+      canpass = true
+   else
+      if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
+         AddPlayerChat(ply,"Error link " .. link)
+      else
+         canpass = true
+      end
+   end
+   if canpass then
      local packagefilee = io.open(packjsonpath, 'r') -- reopen it every time to load changes
          if packagefilee then
             local contents = packagefilee:read("*a")
@@ -491,7 +499,7 @@ function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath)
                io.close(file)
             end
          end
-  end
+   end
   http_destroy(http)
 end
 
@@ -526,29 +534,37 @@ function checkadmin(ply)
    end
 end
 
-AddCommand("searchraws",function(ply,package,repolink)
+function addraws_cmd(ply,package,repolink,cmdname,ispredicted)
    if (package~=nil and repolink~=nil and package~="" and repolink~="" and package~=" " and repolink~=" ") then
-   local isadmin = checkadmin(ply)
-      if (isadmin == false or isadmin == nil) then
-          AddPlayerChat(ply,"You are not admin")
-      else
-         local packagefilee = io.open("packages/"..package.."/package.json", 'r') 
-         if packagefilee then
-            local contents = packagefilee:read("*a")
-            local packagefile = json_decode(contents);
-            io.close(packagefilee)
-            if packagefile.auto_updater then
-               AddPlayerChat(ply,"This package already supports auto updater")
-            else
-                searchraws_http(repolink,true,ply,packagefile,"github.com",nil,"packages/"..package.."/package.json")
-            end
+      local isadmin = checkadmin(ply)
+         if (isadmin == false or isadmin == nil) then
+             AddPlayerChat(ply,"You are not admin")
          else
-            AddPlayerChat(ply,"Package not found")
+            local packagefilee = io.open("packages/"..package.."/package.json", 'r') 
+            if packagefilee then
+               local contents = packagefilee:read("*a")
+               local packagefile = json_decode(contents);
+               io.close(packagefilee)
+               if packagefile.auto_updater then
+                  AddPlayerChat(ply,"Removed last auto updater support")
+                  packagefile.auto_updater = nil
+               end
+                   searchraws_http(repolink,true,ply,packagefile,"github.com",nil,"packages/"..package.."/package.json",ispredicted)
+            else
+               AddPlayerChat(ply,"Package not found")
+            end
          end
-      end
-else
-   AddPlayerChat(ply,"/searchraws <packagename> <repolink>")
+   else
+      AddPlayerChat(ply,"/ ".. cmdname .. " <packagename> <repolink>")
+   end
 end
+
+AddCommand("searchraws",function(ply,package,repolink)
+    addraws_cmd(ply,package,repolink,"searchraws",false)
+end)
+
+AddCommand("predictraws",function(ply,package,repolink)
+   addraws_cmd(ply,package,repolink,"predictraws",true)
 end)
 
 AddCommand("reinstall",function(ply,packagename)
