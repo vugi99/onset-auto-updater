@@ -14,7 +14,7 @@ function check_if_restart()
       if restart_packages[1] == nil then
          ServerExit("Applying update for autoupdater")
       else
-      print("Applying updates")
+         auto_updater_log("Applying updates")
       for i,v in ipairs(restart_packages) do
          StopPackage(v)
 
@@ -27,7 +27,30 @@ function check_if_restart()
    end
 end
 
-function get_latest_commit(link,packagename)
+function auto_updater_log(msg,ply)
+   print(msg)
+   if ply then
+      AddPlayerChat(ply,msg)
+   end
+   local logfile = io.open("auto_updater_logs.txt", 'r') 
+   local logs = nil
+   if logfile then
+       logs = logfile:read("*a")
+       io.close(logfile)
+   end
+   local lfilew = io.open("auto_updater_logs.txt", 'w') 
+   local date = os.date()
+   local strtowrite = ""
+   if not logs then
+      strtowrite = date .. " / " .. msg .. "\n"
+   else
+      strtowrite = logs .. date .. " / " .. msg .. "\n"
+   end
+   lfilew:write(strtowrite)
+   io.close(lfilew)
+end
+
+function get_latest_commit(link,packagename,print_ply)
    local linksplit = link:split("://")
    local protocol = linksplit[1]
    local linksplit2 = link:split("/")
@@ -55,16 +78,16 @@ function get_latest_commit(link,packagename)
 	http_set_version(r, 11)
 	http_set_keepalive(r, false)
    http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
-   if http_send(r, OnGetCompletecommits, "Str L", 88.88, 1337,r,packagename) == false then
-      print("Url " .. link .. " not found")
+   if http_send(r, OnGetCompletecommits, "Str L", 88.88, 1337,r,packagename,print_ply) == false then
+      auto_updater_log("Url " .. link .. " not found",print_ply)
       http_destroy(r)
    end
    else
-       print("Can't find the latest commit for " .. link)
+      auto_updater_log("Can't find the latest commit for " .. link,print_ply)
    end
 end
 
-function auto_updater_http(link,isjson,packagename,path,isjsonautoupdater,needtorestart,reinstall)
+function auto_updater_http(link,isjson,packagename,path,isjsonautoupdater,needtorestart,reinstall,print_ply)
    local linksplit = link:split("://")
    local protocol = linksplit[1]
    local linksplit2 = link:split("/")
@@ -88,16 +111,16 @@ function auto_updater_http(link,isjson,packagename,path,isjsonautoupdater,needto
    http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
    if not isjsonautoupdater then
    if isjson then
-      if http_send(r, OnGetCompletejson, "Str L", 88.88, 1337,r,packagename,needtorestart,reinstall,link) == false then
-		   print("Url " .. link .. " not found")
+      if http_send(r, OnGetCompletejson, "Str L", 88.88, 1337,r,packagename,needtorestart,reinstall,link,print_ply) == false then
+		   auto_updater_log("Url " .. link .. " not found",print_ply)
          http_destroy(r)
          if needtorestart then
          files_updates=files_updates-1
          end
       end
    else
-      if http_send(r, OnGetCompletefile, "Str L", 88.88, 1337,r,packagename,path,needtorestart,reinstall) == false then
-		   print("Url " .. link .. " not found , update for this file failed")
+      if http_send(r, OnGetCompletefile, "Str L", 88.88, 1337,r,packagename,path,needtorestart,reinstall,print_ply) == false then
+		   auto_updater_log("Url " .. link .. " not found , update for this file failed",print_ply)
          http_destroy(r)
          if needtorestart then
             files_updates=files_updates-1
@@ -106,7 +129,7 @@ function auto_updater_http(link,isjson,packagename,path,isjsonautoupdater,needto
    end
 else
    if http_send(r, OnGetCompleteautoupdater, "Str L", 88.88, 1337,r,packagename) == false then
-      print("Url " .. link .. " not found , update for the autoupdater failed")
+      auto_updater_log("Url " .. link .. " not found , update for the autoupdater failed")
       http_destroy(r)
       files_updates=0
       searchupdatesallpackages(true,false)
@@ -114,9 +137,9 @@ else
    end
 end
 
-function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link)
+function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link,print_ply)
    if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
-      print("Invalid link for " .. packagename)
+      auto_updater_log("Invalid link for " .. packagename,print_ply)
       files_updates=files_updates-1
   else
    local body = http_result_body(http)
@@ -131,16 +154,16 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                end
                if (pack_tbl.version ~= httppackage.version or reinstall) then
                   if not reinstall then
-                  print("Updating " .. packagename .. " " .. pack_tbl.version .. " ---> " .. httppackage.version)
+                     auto_updater_log("Updating " .. packagename .. " " .. pack_tbl.version .. " ---> " .. httppackage.version,print_ply)
                   else
-                     print("Reinstalling " .. packagename .. " " .. httppackage.version)
+                     auto_updater_log("Reinstalling " .. packagename .. " " .. httppackage.version,print_ply)
                   end
                   table.insert(restart_packages,packagename)
                   if httppackage.auto_updater then
                      local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
                   if writejson then
                      writejson:write(body)
-                     print("file package.json updated")
+                     auto_updater_log("file package.json updated",print_ply)
                      io.close(writejson)
                   end
                         if httppackage.server_scripts then
@@ -149,7 +172,7 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                  auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                  auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end
@@ -159,7 +182,7 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end
@@ -169,18 +192,18 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                 auto_updater_http(httppackage.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end 
                      else
-                        print("The auto updater support is not on github , update of " .. packagename .. " update will perform with the local package.json")
+                        auto_updater_log("The auto updater support is not on github , update of " .. packagename .. " update will perform with the local package.json",print_ply)
                         local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
                         if writejson then
                            pack_tbl.version = httppackage.version
                             writejson:write(json_encode(pack_tbl))
                             io.close(writejson)
-                            print("changed version in package.json")
+                            auto_updater_log("changed version in package.json",print_ply)
                         end
                         if pack_tbl.server_scripts then
                            for i,v in pairs(pack_tbl.server_scripts) do
@@ -188,7 +211,7 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                  auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                  auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end
@@ -198,7 +221,7 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end
@@ -208,23 +231,23 @@ function OnGetCompletejson(a, b, c,http,packagename,needtorestart,reinstall,link
                                  if needtorestart then
                                  files_updates=files_updates+1
                                  end
-                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall)
+                                 auto_updater_http(pack_tbl.auto_updater[v],false,packagename,v,nil,needtorestart,reinstall,print_ply)
                               end
                            end
                         end
                      end
-                     get_latest_commit(link,packagename)
+                     get_latest_commit(link,packagename,print_ply)
                else
-                  print("No updates for " .. packagename)
+                  auto_updater_log("No updates for " .. packagename,print_ply)
                end
            end
          end
    http_destroy(http)
 end
 
-function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall)
+function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall,print_ply)
    if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
-      print("Invalid link for " .. packagename)
+      auto_updater_log("Invalid link for " .. packagename,print_ply)
       if needtorestart then
          files_updates=files_updates-1
          check_if_restart()
@@ -237,15 +260,15 @@ function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall
       lasti=i
    end
       if (pathsplit[lasti] == "png" or pathsplit[lasti] == "jpg" or pathsplit[lasti] == "jpeg" or pathsplit[lasti] == "gif" or pathsplit[lasti] == "wav" or pathsplit[lasti] == "mp3" or pathsplit[lasti] == "ogg" or pathsplit[lasti] == "oga" or pathsplit[lasti] == "flac" or pathsplit[lasti] == "ttf" or pathsplit[lasti] == "woff2" or pathsplit[lasti] == "pak") then
-         print("file " .. path .. " : unsupported format")
+         auto_updater_log("file " .. path .. " : unsupported format",print_ply)
       else
    local file = io.open("packages/"..packagename.."/" .. path, 'w') 
    if file then
       file:write(body)
       if not reinstall then
-      print("file " .. path .. " updated")
+         auto_updater_log("file " .. path .. " updated",print_ply)
       else
-         print("file " .. path .. " reinstalled")
+         auto_updater_log("file " .. path .. " reinstalled",print_ply)
       end
       io.close(file)
       if needtorestart then
@@ -265,10 +288,10 @@ function OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall
             end
          end
       end
-      print(r_path .. " CREATING THE PATH")
+      auto_updater_log(r_path .. " CREATING THE PATH",print_ply)
       local path_ = '"' .. r_path .. '"'
       os.execute("mkdir " .. path_)
-      OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall)
+      OnGetCompletefile(a, b, c,http,packagename,path,needtorestart,reinstall,print_ply)
    end
 end
 end
@@ -278,7 +301,7 @@ end
 function OnGetCompleteautoupdater(a, b, c,http,packagename)
    if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
       files_updates=files_updates-1
-      print("Invalid link for " .. packagename)
+      auto_updater_log("Invalid link for " .. packagename)
       searchupdatesallpackages(true,false)
   else
    local body = http_result_body(http)
@@ -290,11 +313,11 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
       io.close(file)
       files_updates=files_updates-1
       if pack_tbl.version ~= httppackage.version then
-      print("Updating " .. packagename .. " " .. pack_tbl.version .. " ---> " .. httppackage.version)
+         auto_updater_log("Updating " .. packagename .. " " .. pack_tbl.version .. " ---> " .. httppackage.version)
       local writejson = io.open("packages/"..packagename.."/package.json", 'w') 
       if writejson then
          writejson:write(body)
-         print("file package.json updated")
+         auto_updater_log("file package.json updated")
          io.close(writejson)
       end
       if httppackage.server_scripts then
@@ -326,26 +349,26 @@ function OnGetCompleteautoupdater(a, b, c,http,packagename)
    end
    else
       files_updates=files_updates-1
-      print("INVALID AUTO_UPDATER PATH")
+      auto_updater_log("INVALID AUTO_UPDATER PATH")
    end
 end
    http_destroy(http)
 end
 
-function OnGetCompletecommits(a,b,c,http,packagename) 
+function OnGetCompletecommits(a,b,c,http,packagename,print_ply) 
    local body = http_result_body(http)
    local httppackage = json_decode(body)
    if (http_is_error(http) or httppackage.message == "Not Found") then
-       print("Can't find the latest commit")
+      auto_updater_log("Can't find the latest commit",print_ply)
    else
       if httppackage[1].commit.message then
-         print("Last commit message for " .. packagename .. " is " .. httppackage[1].commit.message)
+         auto_updater_log("Last commit message for " .. packagename .. " is " .. httppackage[1].commit.message,print_ply)
       end
    end
    http_destroy(http)
 end
 
-function searchupdatesallpackages(needtorestart,reinstall)
+function searchupdatesallpackages(needtorestart,reinstall,print_ply)
    local file = io.open("server_config.json", 'r') 
    if (file) then 
        local contents = file:read("*a")
@@ -361,7 +384,7 @@ function searchupdatesallpackages(needtorestart,reinstall)
           if pack_tbl.auto_updater then
              if pack_tbl.auto_updater["package.json"] then
                 files_updates=files_updates+1 
-                auto_updater_http(pack_tbl.auto_updater["package.json"],true,v,nil,nil,needtorestart,reinstall)
+                auto_updater_http(pack_tbl.auto_updater["package.json"],true,v,nil,nil,needtorestart,reinstall,print_ply)
              end
           end
       end
@@ -382,7 +405,7 @@ AddEvent("OnPackageStart",function()
                   end
                end
             else
-               print("Critical error , can't find the package.json of the autoupdater")
+               auto_updater_log("Critical error , can't find the package.json of the autoupdater")
            end
 end)
 
@@ -418,17 +441,17 @@ function searchraws_http(link,isfirstcheck,ply,packagefile,host,path,packjsonpat
    http_set_field(r, "user-agent", "Onset Server "..GetGameVersionString())
    if isfirstcheck then
       if http_send(r, OnGetCompletecheck, "Str L", 88.88, 1337,r,gitname,reponame,ply,packagefile,protocol,packjsonpath,ispredicted) == false then
-		   print("Url " .. link .. " not found")
+		   auto_updater_log("Url " .. link .. " not found")
 		   http_destroy(r)
       end
    else
       if http_send(r, OnGetCompletenewraw, "Str L", 88.88, 1337,r,ply,path,link,packjsonpath,ispredicted) == false then
-		   print("Url " .. link .. " not found")
+		   auto_updater_log("Url " .. link .. " not found")
 		   http_destroy(r)
       end
    end
 else
-   AddPlayerChat(ply,"Invalid link")
+   auto_updater_log("Invalid link",ply)
 end
 end
 
@@ -439,7 +462,7 @@ end
 
 function OnGetCompletecheck(a,b,c,http,gitname,reponame,ply,packagefile,protocol,packjsonpath,ispredicted)
    if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
-       AddPlayerChat(ply,"Invalid link")
+      auto_updater_log("Invalid link",ply)
    else
       makelink("package.json",gitname,reponame,ply,protocol,packjsonpath,ispredicted)
       if packagefile.server_scripts then
@@ -474,7 +497,7 @@ function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath,ispredicted)
       canpass = true
    else
       if (http_is_error(http) or http_result_body(http)=="400: Invalid request\n" or http_result_body(http)=="404: Not Found\n") then
-         AddPlayerChat(ply,"Error link " .. link)
+         auto_updater_log("Error link " .. link,ply)
       else
          canpass = true
       end
@@ -495,7 +518,7 @@ function OnGetCompletenewraw(a,b,c,http,ply,path,link,packjsonpath,ispredicted)
             if file then
                local contents = json_encode(packagefile)
                file:write(contents)
-               AddPlayerChat(ply,"Saved auto_updater support path : " .. path.."  ".." link found : ".. link .. " restart to check updates")
+               auto_updater_log("Saved auto_updater support path : " .. path.."  ".." link found : ".. link .. " restart to check updates",ply)
                io.close(file)
             end
          end
@@ -527,7 +550,7 @@ function checkadmin(ply)
       if file then
          local contents = json_encode(tbltoencode)
          file:write(contents)
-         AddPlayerChat(ply,"admin.json file created in " .. "packages/"..GetPackageName().." please add admins restart the server and retry the command")
+         auto_updater_log("admin.json file created in " .. "packages/"..GetPackageName().." please add admins restart the server and retry the command",ply)
          io.close(file)
       end
       return nil
@@ -538,7 +561,7 @@ function addraws_cmd(ply,package,repolink,cmdname,ispredicted)
    if (package~=nil and repolink~=nil and package~="" and repolink~="" and package~=" " and repolink~=" ") then
       local isadmin = checkadmin(ply)
          if (isadmin == false or isadmin == nil) then
-             AddPlayerChat(ply,"You are not admin")
+            auto_updater_log("You are not admin",ply)
          else
             local packagefilee = io.open("packages/"..package.."/package.json", 'r') 
             if packagefilee then
@@ -546,16 +569,16 @@ function addraws_cmd(ply,package,repolink,cmdname,ispredicted)
                local packagefile = json_decode(contents);
                io.close(packagefilee)
                if packagefile.auto_updater then
-                  AddPlayerChat(ply,"Removed last auto updater support")
+                  auto_updater_log("Removed last auto updater support",ply)
                   packagefile.auto_updater = nil
                end
                    searchraws_http(repolink,true,ply,packagefile,"github.com",nil,"packages/"..package.."/package.json",ispredicted)
             else
-               AddPlayerChat(ply,"Package not found")
+               auto_updater_log("Package not found",ply)
             end
          end
    else
-      AddPlayerChat(ply,"/ ".. cmdname .. " <packagename> <repolink>")
+      auto_updater_log("/ ".. cmdname .. " <packagename> <repolink>",ply)
    end
 end
 
@@ -570,7 +593,7 @@ end)
 AddCommand("reinstall",function(ply,packagename)
    local isadmin = checkadmin(ply)
       if (isadmin == false or isadmin == nil) then
-          AddPlayerChat(ply,"You are not admin")
+         auto_updater_log("You are not admin",ply)
       else
     if (packagename ~= nil and packagename ~= "" and packagename ~= " ") then
       local package = io.open("packages/"..packagename.."/package.json", 'r') 
@@ -580,18 +603,18 @@ AddCommand("reinstall",function(ply,packagename)
           io.close(package)
           if pack_tbl.auto_updater then
              if pack_tbl.auto_updater["package.json"] then
-               AddPlayerChat(ply,"Please restart the server after that (when the server console stop printing things) to apply changes")
-                auto_updater_http(pack_tbl.auto_updater["package.json"],true,packagename,nil,false,false,true)
+               auto_updater_log("Please restart the server after that to apply changes (if files were updated)",ply)
+                auto_updater_http(pack_tbl.auto_updater["package.json"],true,packagename,nil,false,false,true,ply)
              end
             else
-               AddPlayerChat(ply,"This package does not support auto_updater")
+               auto_updater_log("This package does not support auto_updater",ply)
           end
        else
-          print("Package not found")
+         auto_updater_log("Package not found")
       end
    else
-      AddPlayerChat(ply,"Please restart the server after that (when the server console stop printing things) to apply changes")
-      searchupdatesallpackages(false,true)
+      auto_updater_log("Please restart the server after that to apply changes (if files were updated)",ply)
+      searchupdatesallpackages(false,true,ply)
     end
    end
 end)
@@ -599,7 +622,7 @@ end)
 AddCommand("searchupdates",function(ply,packagename)
    local isadmin = checkadmin(ply)
       if (isadmin == false or isadmin == nil) then
-          AddPlayerChat(ply,"You are not admin")
+         auto_updater_log("You are not admin",ply)
       else
     if (packagename ~= nil and packagename ~= "" and packagename ~= " ") then
       local package = io.open("packages/"..packagename.."/package.json", 'r') 
@@ -609,18 +632,18 @@ AddCommand("searchupdates",function(ply,packagename)
           io.close(package)
           if pack_tbl.auto_updater then
              if pack_tbl.auto_updater["package.json"] then
-               AddPlayerChat(ply,"Please restart the server after that (when the server console stop printing things) to apply changes (if files were updated (server console))")
-                auto_updater_http(pack_tbl.auto_updater["package.json"],true,packagename,nil,false,false,false)
+               auto_updater_log("Please restart the server after that to apply changes (if files were updated)",ply)
+                auto_updater_http(pack_tbl.auto_updater["package.json"],true,packagename,nil,false,false,false,ply)
              end
             else
-               AddPlayerChat(ply,"This package does not support auto_updater")
+               auto_updater_log("This package does not support auto_updater",ply)
           end
        else
-          print("Package not found")
+         auto_updater_log("Package not found",ply)
       end
    else
-      AddPlayerChat(ply,"Please restart the server after that (when the server console stop printing things) to apply changes (if files were updated (server console))")
-      searchupdatesallpackages(false,false)
+      auto_updater_log("Please restart the server after that to apply changes (if files were updated)",ply)
+      searchupdatesallpackages(false,false,ply)
     end
    end
 end)

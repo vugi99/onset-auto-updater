@@ -6,6 +6,7 @@
 * It will print No updates for (package) for each package that supports onset-auto-updater if the version hasn't changed on the github page
 * You need to restart the server to apply changes when you do auto-updater commands (automatically stopped if there is an autoupdater update and updated packages are reloaded)
 * onset-auto-updater can now handle raw.githubusercontent errors 400 and 404
+* onset-auto-updater logs are located in the server root directory and the logs file is named "auto_updater_logs.txt"
 * Supported files : lua, js, css, html, htm
 
 #### Unsupported files informations
@@ -18,8 +19,8 @@
 * If you are a user that installed an update less than 10 mins from the git push the auto-updater will revert changes because raw.githubusercontent.com take ~ 10 mins to update and will re-update it if you re-launch your server when raw.githubusercontent.com is updated
 
 #### Admins (admins.json) commands
-* /searchupdates (package that supports auto-updater optional) - if no args are given it will search updates like when you are starting your server (all changes printed in the console) you need to restart if updates were downloaded , if the package arg is given it will search for updates for the given package
-* /reinstall (package that supports auto-updater optional) - if no args are given it will reinstall all packages that supports auto-updater from github (all changes printed in the console) you need to restart the server to apply changes , if the package arg is given it will reinstall the given package (you need to restart the server to apply changes)
+* /searchupdates (package that supports auto-updater optional) - if no args are given it will search updates like when you are starting your server (all changes printed in the console and in the player chat) you need to restart if updates were downloaded , if the package arg is given it will search for updates for the given package
+* /reinstall (package that supports auto-updater optional) - if no args are given it will reinstall all packages that supports auto-updater from github (all changes printed in the console and in the player chat) you need to restart the server to apply changes , if the package arg is given it will reinstall the given package (you need to restart the server to apply changes)
 
 #### How to support onset-auto-updater AUTOMATICALLY for developers
 * If there is already an auto-updater support , he will be replaced/updated if you do these commands
